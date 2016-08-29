@@ -1,0 +1,121 @@
+buildscript {
+  repositories {
+    mavenLocal()
+    mavenCentral()
+  }
+  dependencies {
+    classpath 'org.springframework.boot:spring-boot-gradle-plugin:1.2.3.RELEASE'
+  }
+}
+
+apply plugin: 'java'
+apply plugin: 'idea'
+apply plugin: 'spring-boot'
+apply plugin: 'project-report'
+apply plugin: 'maven-publish'
+
+sourceCompatibility = JavaVersion.VERSION_1_8
+
+jar {
+  baseName = 'vantage'
+}
+version = '0.3.5'
+
+repositories {
+  mavenCentral()	   
+  maven {
+    url 'http://m2.neo4j.org/content/groups/public'
+  }
+  maven {
+    url 'https://repository.sonatype.org/content/groups/forge'
+  }
+}
+
+dependencies {
+  compile('org.springframework.boot:spring-boot-starter-web') {
+    exclude module: 'spring-boot-starter-tomcat'
+  }
+  compile 'org.springframework.boot:spring-boot-starter-jetty'
+  compile 'org.springframework.boot:spring-boot-starter-actuator'
+  compile 'com.fasterxml.jackson.core:jackson-databind:2.8.1'
+
+  // Swagger for API documentation
+  compile 'com.mangofactory:swagger-springmvc:1.0.2'
+
+  compile 'org.neo4j:neo4j-jdbc:2.3.2'
+  compile 'org.neo4j.test:neo4j-harness:2.3.2'
+  compile 'org.springframework.boot:spring-boot-starter-jdbc'
+
+  compile 'org.apache.maven:maven-artifact:3.3.9'
+
+  testCompile 'com.jayway.restassured:spring-mock-mvc:2.4.0'
+  testCompile 'junit:junit:4.11'
+  testCompile 'org.springframework.boot:spring-boot-starter-test'
+  testCompile 'com.netflix.feign:feign-core:8.16.0'
+  testCompile 'com.netflix.feign:feign-jackson:8.16.0'
+  testCompile 'com.netflix.feign:feign-slf4j:8.16.0'
+}
+
+task wrapper(type: Wrapper) {
+  gradleVersion = '2.5'
+}
+
+task bowerInstall(type: Exec) {
+  executable 'bower'
+  args 'install'  
+  inputs.file file('bower.json')
+  outputs.dir file('src/main/resources/public/vendor')
+}
+
+processResources.dependsOn bowerInstall
+clean.dependsOn cleanBowerInstall
+
+bootRun{
+  jvmArgs '-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005'
+  if (project.hasProperty('embedded')) {
+    jvmArgs '-Dspring.profiles.active=embedded'
+  }
+  addResources = true
+  systemProperties = System.properties
+}
+
+//We enable publishing of vantage as a generic jar so that it can be augmented by end-users if desired prior to being run
+
+
+task sourceJar(type: Jar) {
+    from sourceSets.main.allJava
+    classifier 'source'
+    baseName 'vantage-core'
+}
+
+task coreJar(type: Jar) {
+     from sourceSets.main.output
+     baseName 'vantage-core'
+}
+
+build.dependsOn coreJar
+build.dependsOn sourceJar
+
+publishing {
+  publications {
+    mavenJava(MavenPublication) {
+      artifactId 'vantage-core'
+      groupId 'com.yodle'
+
+      from components.java
+
+      artifact sourceJar {
+        classifier "sources"
+      }
+
+      //Because this project uses the gradle spring-boot plugin for dependency management which allows for verisonless dependencies,
+      //its poms must provide a parent to provide valid versions.  See http://docs.spring.io/spring-boot/docs/current/reference/html/build-tool-plugins-gradle-plugin.html for details
+      pom.withXml {
+        def parent = asNode().appendNode('parent')
+        parent.appendNode('groupId', 'org.springframework.boot')
+        parent.appendNode('artifactId', 'spring-boot-parent')
+        parent.appendNode('version', '1.2.3.RELEASE')
+      }
+    }
+  }
+}

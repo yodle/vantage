@@ -1,0 +1,35 @@
+<ul class="breadcrumb">
+    <li>Components</li>
+</ul>
+
+<div>
+    <div ng-controller="paginate"
+         ng-init="pager.init(10)">
+        <div class="clearfix">
+            <h4>
+                <div class="field-wrapper search float-right col-md-8">
+                    <input auto-focus placeholder="Search by Component" ng-model="search['name']" type="Search">
+                </div>
+            </h4>
+            <div class="table-filters page-ctrls" style="border: none;">
+                <div paging-ctrl></div>
+            </div>
+        </div>
+
+        <ul class="list-group ng-scope">
+           <div ng-show="!componentsLoaded" class="loader">
+                <span>{</span><span>}</span>
+            </div>
+            <li ng-repeat="component in pager.items = (components | filter:search) | offset:pager.pageOffset() | limitTo:pager.pageSize"
+                        class="list-group-item"
+                        ng-class="{'light-gray-background': $index % 2 == 1}">
+                <span class="primary-iformation">
+                    <a class="primary-information" href="/vantage/components/{{component.name}}">{{component.name}}</a>
+                </span>
+                <br />
+                <a ng-if="component.mostRecentVersion" class="font-italic" href="/vantage/components/{{component.name}}/versions/{{component.mostRecentVersion}}">View most recent version: {{component.mostRecentVersion}}</a>
+            </li>
+        </ul>
+    </div>
+</div>
+

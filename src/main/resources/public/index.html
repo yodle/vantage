@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en-US">
+<head>
+    <base href="/">
+    <title>Vantage</title>
+
+    <script data-main="vantage/app/main.js" src="vantage/vendor/requirejs/require.js" ></script>
+    <link href='https://fonts.googleapis.com/css?family=Open+Sans:300,400' rel='stylesheet' type='text/css'>
+
+    <!-- Bootstrap -->
+    <link href="//maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet">
+
+    <link rel="stylesheet" href="vantage/vendor/angular-busy/angular-busy.css">
+    <link rel="stylesheet" href="vantage/stylesheets/main.css">
+
+</head>
+<body>
+    <div id="main-wrap">
+        <div>
+	  <nav class="navbar navbar-default">
+	    <div class="container-fluid">
+              <div class="navbar-header">
+		<a href="/">
+		  <img src="/vantage/images/logo.png" style="width: 263px;height: 58px;margin-bottom: 18px;">
+		</a>
+              </div>
+	      <div class="collapse navbar-collapse">
+		<ul class="nav navbar-nav">
+		  <li><a href="/vantage/components">Components</a></li>
+		  <li><a href="/vantage/issues">Issues</a></li>
+		</ul>
+		<ul class="nav navbar-nav navbar-right"><li>
+		  <a class="label" target="_blank" href="/vantage/api-browser/index.html" >View API Docs</a>
+		</li></ul>
+	      </div>
+	    </div>
+	  </nav>
+	</div>
+        <div id="content-wrapper">
+            <div id="content" class="container" >
+                <div class="col-md-12">
+                    <div ng-view></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

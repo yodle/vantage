@@ -1,0 +1,50 @@
+
+<ul class="breadcrumb">
+    <li><a href="/vantage/components">All Components</a></li>
+    <li><a href="/vantage/components/{{version.component}}">{{version.component}}</a></li>
+    <li>{{version.version}}</li>
+</ul>
+
+<div ng-show="!versionLoaded" class="loader">
+    <span>{</span><span>}</span>
+</div>
+
+<div ng-show="versionLoaded">
+    <div class="clearfix">
+        <h1>Issues</h1>
+    </div>
+    <ul class="list-group ng-scope"  ng-if="version.directIssues.length > 0">
+        <li ng-repeat="issue in version.directIssues" class="list-group-item" ng-class="{'light-gray-background': $index % 2 == 1}">
+            <a href="/vantage/issues/{{issue.id}}">{{issue.id}}</a> - {{issue.level}}: {{issue.message}}
+        </li>
+    </ul>
+    <div ng-if="version.directIssues.length == 0">
+        <p class="alert alert-success">There are currently no known issues with {{version.component}}:{{version.version}}.</p>
+    </div>
+    <a href="/vantage/createIssue/{{version.component}}/{{version.version}}" class="btn btn-success pull-right">Create Issue</a>
+</div>
+
+<div ng-show="versionLoaded">
+    <div class="clearfix" ng-if="version.dependents.length > 0">
+        <h1>Dependents</h1>
+    </div>
+    <ul class="list-group ng-scope">
+        <li ng-repeat="dep in version.dependents" class="list-group-item" ng-class="{'light-gray-background': $index % 2 == 1}">
+            <div dependency-link dependency="dep"></div>
+        </li>
+    </ul>
+</div>
+
+<div ng-show="versionLoaded">
+    <h1>Depends On</h1>
+    <div ng-if="version.resolvedDependencies.length > 0">
+        <div dependency-list dependencies="version.resolvedDependencies"></div>
+    </div>
+    <div ng-if="version.resolvedDependencies.length == 0 && version.requestedDependencies.length > 0">
+        <p>Warning:  These dependencies have been implicitly reported by other components that depend on this component.  They only represent the dependencies directly requested by this component as we cannot determine how this component's build script would resolve transitive dependencies.</p>
+        <div dependency-list dependencies="version.requestedDependencies"></div>
+    </div>
+    <div ng-if="version.resolvedDependencies.length == 0 && version.requestedDependencies.length == 0">
+        <p>Unable to find the resolved or requested dependencies for this version.</p>
+    </div>
+</div>

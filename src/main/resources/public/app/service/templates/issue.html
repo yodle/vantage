@@ -1,0 +1,98 @@
+<ul class="breadcrumb">
+    <li><a href="/vantage/issues">All Issues</a></li>
+    <li>{{issue.id}}</li>
+</ul>
+
+<div>
+
+
+
+<form class="form-horizontal">
+    <div class="col-md-12">
+
+        <div class="col-md-4">
+            <div class="form-group">
+                <label for="issueId">ID</label>
+                <span ng-if="!createMode">
+                    {{issue.id}}
+                </span>
+                <span ng-if="createMode">
+                    <input class="form-control" id="issueId" type="text" ng-model="issue.id" >
+                </span>
+            </div>
+        </div>
+        <div class="col-md-6 col-md-offset-2">
+            <div class="form-group">
+                <label >Affected Component</label>
+                <span ng-if="!createMode">
+                    <a href="/vantage/components/{{issue.affectsVersion.component}}">
+                        {{issue.affectsVersion.component}}
+                    </a>
+                </span>
+                <span ng-if="createMode">
+                    <input type=text class="form-control" ng-model="issue.affectsVersion.component" />
+                </span>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-12">
+        <div class="col-md-4">
+            <div class="form-group">
+                <label >Affected Version</label>
+                <a ng-if="!editMode" href="/vantage/components/{{issue.affectsVersion.component}}/versions/{{issue.affectsVersion.version}}">
+                    {{issue.affectsVersion.version}}
+                </a>
+                <span ng-if="editMode">
+                    <input type="text" class="form-control" ng-model="issue.affectsVersion.version" />
+                </span>
+            </div>
+        </div>
+
+        <div class="col-md-6 col-md-offset-2">
+            <div class="form-group">
+                <label >Fix Version</label>
+                <span ng-if="!editMode">
+                    <span ng-if="issue.fixVersion">
+                        <a href="/vantage/components/{{issue.affectsVersion.component}}/versions/{{issue.fixVersion.version}}">
+                            {{issue.fixVersion.version}}
+                        </a>
+                    </span>
+                    <span ng-if="!issue.fixVersion">None</span>
+                </span>
+                <span ng-if="editMode">
+                    <input type=text class="form-control" ng-model="issue.fixVersion.version" />
+                </span>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-12">
+        <div class="form-group">
+            <div class="col-md-4">
+                <label >Severity</label>
+                <span ng-if="!editMode" >
+                    {{issue.level}}
+                </span>
+                <span ng-if="editMode" >
+                    <select class="form-control" ng-model="issue.level" ng-options="x for x in levels">
+                    </select>
+                </span>
+            </div>
+        </div>
+        <div class="col-md-12">
+            <div class="form-group">
+                <label >Details</label>
+                <span ng-if="!editMode" >
+                    {{issue.message}}
+                </span>
+                <span ng-if="editMode" >
+                    <textarea class="form-control" type=text ng-model="issue.message" /></textarea>
+                </span>
+            </div>
+        </div>
+    </div>
+</form>
+    <a class="btn btn-primary pull-right" ng-if="!editMode" ng-click="switchToEdit()">Edit</a>
+    <a class="btn btn-primary pull-right" ng-if="editMode || createMode" ng-click="save()">Save</a>
+    <a class="btn pull-right" ng-if="editMode && !createMode" ng-click="cancel()">Cancel</a>
+    <a class="btn pull-right" href="/vantage/issues" ng-if="createMode">Cancel</a>
+</div>

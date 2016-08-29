@@ -1,0 +1,38 @@
+<ul class="breadcrumb">
+    <li><a href="/vantage/components">All Components</a></li>
+    <li>{{name}}</li>
+</ul>
+
+<div id="description" ng-if="component.description">
+    <p>{{component.description}}</p>
+</div>
+
+<!-- Add Dropdown with Options (Active, All, Inactive) Or Maybe Pills insteads-->
+
+<!-- NG-Repeat for version -->
+
+<div>
+    <div class="clearfix">
+        <h1>Versions</h1>
+    </div>
+    <ul class="list-group ng-scope col-md-9" id="versions">
+        <div ng-show="!versionsLoaded" class="loader">
+            <span>{</span><span>}</span>
+        </div>
+        <li ng-repeat="version in versions" class="list-group-item" ng-class="{'light-gray-background': $index % 2 == 1}">
+            <a class="primary-information" href="/vantage/components/{{name}}/versions/{{version.version}}">{{version.version}}</a>
+            <span class="glyphicon glyphicon-star status-icon" ng-attr-title="{{version.active && 'Active (Most recent version of this component or dependend on by an active version of another component)' || 'Inactive' }}"
+                  ng-class="{
+                             'active-version': version.active,
+                             'opacity-3': !version.active
+                            }"
+            ></span>
+            <span class="glyphicon glyphicon-warning-sign status-icon" ng-attr-title="{{version.directIssues.length>0 && 'This version has known issues' || (version.transitiveIssues.length > 0 && 'This version has dependencies with known issues' || 'No issues') }}"
+                  ng-class="{'direct-issue': version.directIssues.length > 0,
+                             'transitive-issue': version.directIssues.length == 0 && version.transitiveIssues.length > 0,
+                             'opacity-3': version.directIssues.length == 0 && version.transitiveIssues.length == 0
+                            }"
+            ></span>
+        </li>
+    </ul>
+</div>

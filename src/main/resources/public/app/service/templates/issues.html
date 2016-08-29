@@ -1,0 +1,58 @@
+<ul class="breadcrumb">
+    <li>All Issues</li>
+</ul>
+
+<a href="/vantage/createIssue" class="btn btn-primary pull-right">Create New Issue</a>
+<div ng-controller="paginate" ng-init="pager.init(10)">
+    <div class="clearfix">
+        <h4>
+            <div class="field-wrapper search float-right col-md-8">
+                <input auto-focus placeholder="Search by Issue Id, Component, or Details" ng-model="search" type="Search">
+            </div>
+        </h4>
+        <div class="table-filters page-ctrls" style="border: none;">
+          <div paging-ctrl></div>
+        </div>
+    </div>
+    <table class="table table-condensed table-hover table-striped">
+        <thead>
+        <tr>
+            <th class="col-md-2">Id</th>
+            <th class="col-md-3">Affected Component</th>
+            <th class="col-md-1">Affects Version</th>
+            <th class="col-md-1">Fix Version</th>
+            <th class="col-md-1">Severity</th>
+            <th class="col-md-4">Details</th>
+        </tr>
+        </thead>
+        <tr ng-repeat="issue in pager.items = (issues | filter:search) | offset:pager.pageOffset() | limitTo:pager.pageSize">
+            <td>
+                <a href="/vantage/issues/{{issue.id}}">
+                    {{issue.id}}
+                </a>
+            </td>
+            <td>
+                <a href="/vantage/components/{{issue.affectsVersion.component}}">
+                    {{issue.affectsVersion.component}}
+                </a>
+            </td>
+            <td>
+                <a href="/vantage/components/{{issue.affectsVersion.component}}/versions/{{issue.affectsVersion.version}}">
+                    {{issue.affectsVersion.version}}
+                </a>
+            </td>
+            <td>
+                <span ng-if="issue.fixVersion.version">
+                    <a href="/vantage/components/{{issue.affectsVersion.component}}/versions/{{issue.fixVersion.version}}">
+                        {{issue.fixVersion.version}}
+                    </a>
+                </span>
+                <span ng-if="!issue.fixVersion.version">
+                    None
+                </span>
+            </td>
+            <td>{{issue.level}}</td>
+            <td>{{issue.message}}</td>
+        </tr>
+    </table>
+</div>

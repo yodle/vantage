@@ -1,0 +1,25 @@
+<div ng-controller="paginate"
+     ng-init="pager.init(10)">
+    <div class="clearfix">
+        <div class="field-wrapper search col-md-8">
+            <input placeholder="Search by Component" ng-model="search.version.component" type="Search">
+        </div>
+        <div class="table-filters page-ctrls" style="border: none;">
+            <div paging-ctrl></div>
+        </div>
+    </div>
+
+    <ul class="list-group ng-scope">
+        <li ng-repeat="dep in pager.items = (dependencies | filter:search) | offset:pager.pageOffset() | limitTo:pager.pageSize"
+            class="list-group-item"
+            ng-class="{'light-gray-background': $index % 2 == 1}">
+            <span dependency-link dependency="dep"></span>
+            <span ng-if="dep.version.directIssues.length > 0"
+                  class="glyphicon glyphicon-warning-sign status-icon direct-issue margin-top-neg-3"
+                  title="{{dep.version.directIssues[0].id + ': ' + dep.version.directIssues[0].level + ' - ' + dep.version.directIssues[0].message}}">
+            </span>
+            <span ng-if="dep.version.directIssues.length == 0" class="glyphicon glypicon-warning-sign status-icon opacity-3 margin-top-neg-3">
+            </span>
+        </li>
+    </ul>
+</div>
