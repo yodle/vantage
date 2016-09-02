@@ -339,4 +339,5 @@ Vantage is a Java 8 spring-boot web application with an angular frontend driven 
 Vantage's commit history was wiped when it was initially made public.  The following individuals contributed to Vantage prior to the intial publish:
 
 * David Kesler <dkesler@yodle.com>
+* Michael Pearson <michael.pearson@yodle.com>
 
