@@ -333,3 +333,13 @@ Vantage supports two versioning schemes, commit hashes and maven versions.  The 
 ##Technical Details
 
 Vantage is a Java 8 spring-boot web application with an angular frontend driven by a REST backend, using Neo4j as a data store.  It requires Neo4j of at least version 2.1.2.
+
+##Initial Contributors
+
+Vantage's commit history was wiped when it was initially made public.  The following individuals contributed to Vantage prior to the intial publish:
+
+* David Kesler <dkesler@yodle.com>
+* Michael Pearson <michael.pearson@yodle.com>
+* Dan Hasday <dhasday@yodle.com>
+* Andrew Rapport <andrew.rapport@yodle.com>
+
