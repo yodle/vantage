@@ -342,4 +342,4 @@ Vantage's commit history was wiped when it was initially made public.  The follo
 * Michael Pearson <michael.pearson@yodle.com>
 * Dan Hasday <dhasday@yodle.com>
 * Andrew Rapport <andrew.rapport@yodle.com>
-* Avidan Ackerson (formerly of Yodle) <avidan.ackerson@gmail.com>
+* Avidan Ackerson <avidan.ackerson@gmail.com>
