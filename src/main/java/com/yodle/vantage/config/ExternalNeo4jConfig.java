@@ -17,6 +17,8 @@ package com.yodle.vantage.config;
 
 import javax.sql.DataSource;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -31,8 +33,11 @@ public class ExternalNeo4jConfig {
     @Value("${neo4j.user:neo4j}") String neo4jUsername;
     @Value("${neo4j.user:password}") String neo4jPassword;
 
+    private static final Logger l = LoggerFactory.getLogger(ExternalNeo4jConfig.class);
+
     @Bean
     public DataSource neo4jDataSource() {
+        l.info("Connecting to neo4j server at {}:{}", neo4jServer, neo4jPort);
         DriverManagerDataSource ds = new DriverManagerDataSource(
                 String.format(
                         "jdbc:neo4j://%s:%d",
