@@ -76,7 +76,7 @@ bootRun{
     jvmArgs '-Dspring.profiles.active=embedded'
   }
   addResources = true
-  systemProperties = System.properties
+  systemProperties System.properties
 }
 
 //We enable publishing of vantage as a generic jar so that it can be augmented by end-users if desired prior to being run
