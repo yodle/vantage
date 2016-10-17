@@ -1,0 +1,22 @@
+{
+    "component" : "org.sample:sample-library",
+    "version" : "1.0.0",
+    "resolvedDependencies" : [
+	{
+	    "profiles" : ["compile", "testCompile"],
+	    "version" : {
+		"component" : "org.sample:transitively-included-library",
+		"version"   : "1.5.0"
+	    }
+	}
+    ],
+    "requestedDependencies" : [
+	{
+	    "profiles" : ["default"],
+	    "version" : {
+		"component" : "org.sample:transitively-included-library",
+		"version"   : "1.5.0"
+	    }
+	}
+    ]
+}

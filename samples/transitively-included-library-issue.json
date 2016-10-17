@@ -1,0 +1,13 @@
+{
+    "id" : "transitively-included-library-issue",
+    "level" : "CRITICAL",
+    "message" : "This is a description of the issue and why you should upgrade.",
+    "affectsVersion" : {
+	"component" : "org.sample:transitively-included-library",
+	"version"   : "1.6.0"
+    },
+    "fixVersion" : {
+	"component" : "org.sample:transitively-included-library",
+	"version"   : "1.6.1"
+    }
+}

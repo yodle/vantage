@@ -1,0 +1,38 @@
+{
+    "component" : "another-webapp",
+    "version"   : "b51a0e61",
+    "requestedDependencies" : [
+	{
+	    "profiles" :  ["default"],
+	    "version"  : {
+		"component" : "org.sample:sample-library",
+		"version" : "1.1.0"
+	    }
+	}
+    ],
+    "resolvedDependencies" : [
+	{
+	    "profiles" :  ["compile", "testCompile"],
+	    "version"  : {
+		"component" : "org.sample:sample-library",
+		"version" : "1.1.0",
+		"requestedDependencies" : [
+		    {
+			"profiles" : ["default"],
+			"version" : {
+			    "component" : "org.sample:transitively-included-library",
+			    "version"   : "1.6.0"
+			}
+		    }
+		]
+	    }
+	},
+	{
+	    "profiles" :  ["compile", "testCompile"],
+	    "version"  : {
+		"component" : "org.sample:transitively-included-library",
+		"version" : "1.6.0"
+	    }
+	}
+    ]
+}

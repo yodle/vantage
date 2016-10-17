@@ -1,0 +1,7 @@
+{
+    "component" : "org.sample:transitively-included-library",
+    "version"   : "1.5.0"
+}
+
+
+
