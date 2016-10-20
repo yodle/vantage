@@ -1,3 +1,7 @@
+0.4.0 / Unreleased
+=================
+* Refactoring version creation to improve write scalability
+
 0.3.5 / 2016-08-23
 =================
 * Dry-run creates no longer try to persist requested dependencies for performance reasons.
