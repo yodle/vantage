@@ -63,7 +63,8 @@ public class VersionDao {
         jdbcTemplate.update(
                 "MATCH (c:Component {name: {1}})<-[:VERSION_OF]-(v:Version {version:{2}})," +
                         "(c_new:Component {name: {4}})<-[:VERSION_OF]-(v_new:Version {version:{3}}) " +
-                        "CREATE UNIQUE (v)-[:DEPENDS_ON {profiles:{5}}]->(v_new)",
+                        "MERGE (v)-[r:DEPENDS_ON]->(v_new) " +
+                        "SET r.profiles = {5} ",
                 version.getComponent(), version.getVersion(), dep.getVersion(), dep.getComponent(), profiles
         );
     }
@@ -74,7 +75,8 @@ public class VersionDao {
         jdbcTemplate.update(
                 "MATCH (c:Component {name: {1}})<-[:VERSION_OF]-(v:Version {version:{2}})," +
                         "(c_new:Component {name: {4}})<-[:VERSION_OF]-(v_dep:Version {version:{3}}) " +
-                        "MERGE (v)-[:REQUESTS {profiles:{5}, requestVersion:{6}}]->(v_dep)",
+                        "MERGE (v)-[r:REQUESTS]->(v_dep) " +
+                        "SET  r.profiles = {5}, r.requestVersion = {6}",
                 parent.getComponent(), parent.getVersion(), purifiedDepVersion, dep.getComponent(), profiles, requestedVersion
         );
     }

@@ -148,7 +148,7 @@ public class VersionCreateAndUpdateTest extends VantageFunctionalTest {
     @Test
     public void updateVersionWithDepsToHaveMoreDeps() {
         Dependency resolvedDependency = createDependency("dependency component", "dependencyversion");
-        Version v = createVersion("component", "version", new HashSet<>(), Sets.newHashSet());
+        Version v = createVersion("component", "version", new HashSet<>(), Sets.newHashSet(resolvedDependency));
         validateVersion(v);
 
         //add a profile to an existing dep
@@ -157,6 +157,23 @@ public class VersionCreateAndUpdateTest extends VantageFunctionalTest {
         Dependency resolvedDependency2 = createDependency("dependency component2", "dependencyversion2");
 
         v = createVersion("component", "version", new HashSet<>(), Sets.newHashSet(resolvedDependency, resolvedDependency2));
+
+        validateVersion(v);
+    }
+
+    @Test
+    public void updateVersionWithRequestedDepsToHaveMoreDeps() {
+        Dependency dependency = createDependency("dependency component", "1.0.+");
+        createVersion("component", "version", Sets.newHashSet(dependency));
+
+        //add a profile to an existing dep
+        dependency.getProfiles().add("new profile");
+        dependency.getVersion().setVersion("1.+");
+        //also add an entirely new dep
+        Dependency dependency2 = createDependency("dependency component2", "2.+");
+
+        Version v = createVersion("component", "version", Sets.newHashSet(dependency, dependency2));
+        v.getRequestedDependencies().stream().forEach(rd -> rd.getVersion().setVersion("unknown"));
 
         validateVersion(v);
     }
