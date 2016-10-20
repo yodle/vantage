@@ -33,6 +33,7 @@ import java.util.stream.Collectors;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.Answers;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
@@ -63,6 +64,7 @@ public class ComponentServiceTest {
     @Mock private IssueDao issueDao;
     @Mock private VersionDao versionDao;
     @Mock private PrecedenceFixer precedenceFixer;
+    @Mock(answer = Answers.CALLS_REAL_METHODS) private VersionPurifier versionPurifier;
 
     /**
      * createOrUpdateVersion
@@ -89,7 +91,7 @@ public class ComponentServiceTest {
         componentService.createOrUpdateVersion(version);
 
         verify(componentDao).ensureCreated(dependency.getVersion().getComponent());
-        verify(versionDao).createResolvedImplicitDependency(version, dependency.getVersion(), dependency.getProfiles());
+        verify(versionDao).createResolvedDependency(version, dependency.getVersion(), dependency.getProfiles());
     }
 
     @Test
@@ -103,7 +105,7 @@ public class ComponentServiceTest {
         componentService.createOrUpdateVersion(version);
 
         verify(componentDao).ensureCreated(dependency.getVersion().getComponent());
-        verify(versionDao).createRequestedImplicitDependency(version, dependency.getVersion(), dependency.getProfiles());
+        verify(versionDao).createRequestedDependency(version, dependency.getVersion(), versionPurifier.purifyVersion(dependency.getVersion()).getVersion(), dependency.getProfiles());
     }
 
 
@@ -120,7 +122,12 @@ public class ComponentServiceTest {
         componentService.createOrUpdateVersion(version);
 
         verify(componentDao).ensureCreated(requestedDependency.getVersion().getComponent());
-        verify(versionDao).createRequestedImplicitDependency(dependency.getVersion(), requestedDependency.getVersion(), requestedDependency.getProfiles());
+        verify(versionDao).createRequestedDependency(
+                dependency.getVersion(),
+                requestedDependency.getVersion(),
+                versionPurifier.purifyVersion(requestedDependency.getVersion()).getVersion(),
+                requestedDependency.getProfiles()
+        );
     }
 
     @Test
@@ -128,29 +135,33 @@ public class ComponentServiceTest {
         when(versionDao.getVersion(COMPONENT, VERSION)).thenReturn(Optional.of(new Version(COMPONENT, VERSION)));
 
         Version version = new Version(COMPONENT, VERSION);
-        Dependency createdResolvedDependency = createDependency();
+        Dependency createdResolvedDependency = createDependency("DependencyA");
         Dependency existingResolvedDependency = createDependency();
-        Dependency createdDependencyRequestedDependency = createDependency();
+        Dependency createdDependencyRequestedDependency = createDependency("DependencyB");
         Dependency existingDependencyRequestedDependency = createDependency();
-        Dependency createdRequestedDependency = createDependency();
+        Dependency createdRequestedDependency = createDependency("DependencyC");
         Dependency existingRequestedDependency = createDependency();
         createdResolvedDependency.getVersion().setRequestedDependencies(Sets.newHashSet(createdDependencyRequestedDependency, existingDependencyRequestedDependency));
         version.setResolvedDependencies(Sets.newHashSet(createdResolvedDependency, existingResolvedDependency));
         version.setRequestedDependencies(Sets.newHashSet(createdRequestedDependency, existingRequestedDependency));
 
         when(versionDao.createNewVersion(COMPONENT, VERSION)).thenReturn(true);
-        when(versionDao.createRequestedImplicitDependency(version, createdRequestedDependency.getVersion(), createdRequestedDependency.getProfiles())).thenReturn(true);
-        when(versionDao.createRequestedImplicitDependency(createdResolvedDependency.getVersion(), createdDependencyRequestedDependency.getVersion(), createdDependencyRequestedDependency.getProfiles())).thenReturn(true);
-        when(versionDao.createResolvedImplicitDependency(version, createdResolvedDependency.getVersion(), createdResolvedDependency.getProfiles())).thenReturn(true);
+        when(versionDao.createNewVersion(
+                createdRequestedDependency.getVersion().getComponent(),
+                createdRequestedDependency.getVersion().getVersion()
+
+        )).thenReturn(true);
+        when(versionDao.createNewVersion(createdDependencyRequestedDependency.getVersion().getComponent(), createdDependencyRequestedDependency.getVersion().getVersion())).thenReturn(true);
+        when(versionDao.createNewVersion(createdResolvedDependency.getVersion().getComponent(), createdResolvedDependency.getVersion().getVersion())).thenReturn(true);
 
         componentService.createOrUpdateVersion(version);
 
-        verify(precedenceFixer).fixPrecedence(Sets.newHashSet(
-                version.toId(),
+        verify(precedenceFixer).fixPrecedence(Lists.newArrayList(
                 createdResolvedDependency.getVersion().toId(),
+                createdDependencyRequestedDependency.getVersion().toId(),
                 createdRequestedDependency.getVersion().toId(),
-                createdDependencyRequestedDependency.getVersion().toId())
-        );
+                version.toId()
+        ));
     }
 
     /**
@@ -300,8 +311,12 @@ public class ComponentServiceTest {
     }
 
     private Dependency createDependency() {
+        return createDependency("Dependency");
+    }
+
+    private Dependency createDependency(String componentPrefix) {
         Version version = new Version(
-                "Dependency-" + RandomStringUtils.randomAlphanumeric(10),
+                componentPrefix + "-" + RandomStringUtils.randomAlphanumeric(10),
                 "Version-" + RandomStringUtils.randomAlphanumeric(10)
         );
         return new Dependency(version, Sets.newHashSet("compile"));
@@ -317,5 +332,6 @@ public class ComponentServiceTest {
         issue.setAffectsVersion(version);
         issue.setLevel(IssueLevel.CRITICAL);
         issue.setMessage("message");
-        return issue;    }
+        return issue;
+    }
 }

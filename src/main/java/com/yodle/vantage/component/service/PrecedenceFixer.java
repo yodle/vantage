@@ -17,6 +17,7 @@ package com.yodle.vantage.component.service;
 
 import static com.yodle.vantage.component.service.MavenVersionUtils.isMavenStrategy;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 import java.util.SortedSet;
@@ -34,7 +35,7 @@ import com.yodle.vantage.component.domain.VersionId;
 public class PrecedenceFixer {
     @Autowired private VersionDao versionDao;
 
-    public void fixPrecedence(Set<VersionId> versions) {
+    public void fixPrecedence(Collection<VersionId> versions) {
         for (VersionId v : versions) {
             fixPrecendence(v);
         }

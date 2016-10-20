@@ -20,38 +20,21 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 
-import com.google.common.collect.Sets;
 import com.yodle.vantage.component.domain.Dependency;
 import com.yodle.vantage.component.domain.Version;
+import com.yodle.vantage.component.domain.VersionId;
 
 @Component
 public class VersionDao {
-    public static final String UNKNOWN_VERSION = "unknown";
-    public static final String LATEST_VERSION = "latest";
-    public static final String UNDEFINED_VERSION = "undefined"; //Gradle will set versions to undefined if not set
-    public static final Set<String> RESERVED_VERSIONS = Sets.newHashSet(UNDEFINED_VERSION, UNKNOWN_VERSION, LATEST_VERSION);
     @Autowired private JdbcTemplate jdbcTemplate;
 
     public boolean createNewVersion(String componentName, String version) {
-        if (!isRealVersion(version)) {
-            throw new RuntimeException(
-                    String.format("You cannot create a dynamic version [%s] for component [%s]", version, componentName)
-            );
-        }
-
-        if (isLatestVersion(version)) {
-            throw new RuntimeException(
-                    String.format("You cannot specify a version of 'latest' when creating a version for component [%s]", componentName)
-            );
-        }
-
         return (jdbcTemplate.queryForMap(
                 "MATCH (c:Component {name: {1}}) " +
                         "MERGE (v:Version {version: {2}})-[:VERSION_OF]->(c) " +
@@ -62,70 +45,38 @@ public class VersionDao {
         ).get("matched")).equals(false);
     }
 
-    private void createUnknownVersion(String component) {
-	createShadowVersion(component, UNKNOWN_VERSION);
-    }
-
-    private void createLatestVersion(String component) {
-	createShadowVersion(component, LATEST_VERSION);
-    }
-
-    private void createShadowVersion(String component, String type) {
+    public void createShadowVersion(String component, String type) {
         jdbcTemplate.update(
                 "MATCH (c:Component {name: {1}}) " +
-                        "MERGE (v:Version {version: {2}, unknown: true})-[:VERSION_OF]->(c) ON CREATE SET v.created=timestamp() ",
+                        "MERGE (v:Version {version: {2}, unknown: true})-[:VERSION_OF]->(c) " +
+                        "ON CREATE SET v.created=timestamp() " +
+                        //technically, we dont care about this functionally, but the concurrency of version creation requires
+                        //that we hold a write lock on all version nodes we'll be adding dependency relationships to or from
+                        //before we try adding any relationships so we can ensure we've taken the locks in a deterministic
+                        //deadlock-free order
+                        "ON MATCH SET v.matched=true ",
                 component, type
         );
     }
 
-    public boolean createResolvedImplicitDependency(Version version, Version dep, Collection<String> profiles) {
-	boolean created = false;
-        String resolvedVersion = dep.getVersion();
-        if (isLatestVersion(dep.getVersion())) {
-	    createLatestVersion(dep.getComponent());
-	    resolvedVersion = LATEST_VERSION;
-        } else {
-            created = createNewVersion(dep.getComponent(), dep.getVersion());
-	}
-
+    public void createResolvedDependency(VersionId version, Version dep, Collection<String> profiles) {
         jdbcTemplate.update(
                 "MATCH (c:Component {name: {1}})<-[:VERSION_OF]-(v:Version {version:{2}})," +
                         "(c_new:Component {name: {4}})<-[:VERSION_OF]-(v_new:Version {version:{3}}) " +
                         "CREATE UNIQUE (v)-[:DEPENDS_ON {profiles:{5}}]->(v_new)",
-                version.getComponent(), version.getVersion(), resolvedVersion, dep.getComponent(), profiles
+                version.getComponent(), version.getVersion(), dep.getVersion(), dep.getComponent(), profiles
         );
-        return created;
     }
 
-    public boolean createRequestedImplicitDependency(Version version, Version dep, Collection<String> profiles) {
-        boolean created = false;
-        String resolvedVersion = dep.getVersion();
-        if (isLatestVersion(dep.getVersion())) {
-            createLatestVersion(dep.getComponent());
-            resolvedVersion = LATEST_VERSION;
-        } else if (isRealVersion(dep.getVersion())) {
-            created = createNewVersion(dep.getComponent(), dep.getVersion());
-        } else {
-            createUnknownVersion(dep.getComponent());
-            resolvedVersion = UNKNOWN_VERSION;
-        }
+    public void createRequestedDependency(VersionId parent, VersionId dep, String purifiedDepVersion, Collection<String> profiles) {
+
         String requestedVersion = dep.getVersion() == null? "" : dep.getVersion();
         jdbcTemplate.update(
                 "MATCH (c:Component {name: {1}})<-[:VERSION_OF]-(v:Version {version:{2}})," +
                         "(c_new:Component {name: {4}})<-[:VERSION_OF]-(v_dep:Version {version:{3}}) " +
                         "MERGE (v)-[:REQUESTS {profiles:{5}, requestVersion:{6}}]->(v_dep)",
-                version.getComponent(), version.getVersion(), resolvedVersion, dep.getComponent(), profiles, requestedVersion
+                parent.getComponent(), parent.getVersion(), purifiedDepVersion, dep.getComponent(), profiles, requestedVersion
         );
-
-        return created;
-    }
-
-    private static final Pattern REAL_VERSION_PATTERN = Pattern.compile("^[\\-.0-9a-zA-Z_]+$");
-    private boolean isRealVersion(String version) {
-        return version != null && !RESERVED_VERSIONS.contains(version) && REAL_VERSION_PATTERN.matcher(version).matches();
-    }
-    private boolean isLatestVersion(String version) {
-	return version != null && version.toLowerCase().equals(LATEST_VERSION);
     }
 
     public Optional<Version> getVersion(String component, String version) {

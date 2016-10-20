@@ -18,6 +18,8 @@ package com.yodle.vantage.component.service;
 import static com.yodle.vantage.component.service.MavenVersionUtils.isMavenStrategy;
 
 import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -33,6 +35,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.interceptor.TransactionAspectSupport;
 
+import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.yodle.vantage.component.dao.ComponentDao;
 import com.yodle.vantage.component.dao.IssueDao;
@@ -52,6 +55,7 @@ public class ComponentService {
     @Autowired private IssueDao issueDao;
     @Autowired private QueueDao queueDao;
     @Autowired private PrecedenceFixer precedenceFixer;
+    @Autowired private VersionPurifier versionPurifier;
 
     private Logger l = LoggerFactory.getLogger(ComponentService.class);
 
@@ -81,45 +85,143 @@ public class ComponentService {
 
     private Version createOrUpdateVersion(Version version, boolean excludeRequestedDependencies) {
         l.info("Creating version [{}] for component [{}]", version.getVersion(), version.getComponent());
-        //ensure component exists
-        componentDao.ensureCreated(version.getComponent());
-        Set<VersionId> componentsWithVersionsCreated = new HashSet<>();
 
-        //create new version node and link it w/ component + previous versions
-        if (versionDao.createNewVersion(version.getComponent(), version.getVersion())) {
-            componentsWithVersionsCreated.add(version.toId());
-        }
+        //we ensure all components exist at first to prevent concurrency issues as ensuring the components exist
+        //takes a write lock on those nodes
+        ensureReferencedComponentsExist(version);
+
+        //we'll need to fix precedence for any versions we create later
+        List<VersionId> versionsCreated = ensureReferencedVersionsExist(version, excludeRequestedDependencies);
+
         l.info("Saving [{}] resolved dependencies for version [{}], component [{}]", version.getResolvedDependencies().size(), version.getVersion(), version.getComponent());
-        //create resolved dependencies as implicit versions
+        //Add resolved dependency links
         for (Dependency dep : version.getResolvedDependencies()) {
-            componentDao.ensureCreated(dep.getVersion().getComponent());
-            if (versionDao.createResolvedImplicitDependency(version, dep.getVersion(), dep.getProfiles())) {
-                componentsWithVersionsCreated.add(dep.getVersion().toId());
-            }
+            versionDao.createResolvedDependency(version, dep.getVersion(), dep.getProfiles());
             if (!excludeRequestedDependencies) {
-                saveRequestedDependencies(dep.getVersion(), componentsWithVersionsCreated);
+                saveRequestedDependencies(dep.getVersion());
             }
         }
 
         if (!excludeRequestedDependencies) {
             l.info("Saving [{}] requested dependencies for version [{}], component [{}]", version.getRequestedDependencies().size(), version.getVersion(), version.getComponent());
-            saveRequestedDependencies(version, componentsWithVersionsCreated);
+            saveRequestedDependencies(version);
         }
 
-        l.info("Fixing precedence for [{}] created versions for version [{}], component [{}]", componentsWithVersionsCreated.size(), version.getVersion(), version.getComponent());
-        precedenceFixer.fixPrecedence(componentsWithVersionsCreated);
+        l.info("Fixing precedence for [{}] created versions for version [{}], component [{}]", versionsCreated.size(), version.getVersion(), version.getComponent());
+        precedenceFixer.fixPrecedence(versionsCreated);
 
         l.info("Finished saving [{}]:[{}]", version.getComponent(), version.getVersion());
         return getVersion(version.getComponent(), version.getVersion()).orElseThrow(() -> new RuntimeException("Could not find a version [" + version.getVersion() + "] for component [" + version.getComponent() + "] after creating it"));
     }
 
+    //This method implicitly guarantees that the returned 'actually created' version ids are sorted by component and version (in maven ordering)
+    private List<VersionId> ensureReferencedVersionsExist(Version version, boolean excludeRequestedDependencies) {
+        Set<VersionId> realVersionsToEnsureCreated = new HashSet<>();
+        realVersionsToEnsureCreated.add(versionPurifier.requireRealVersion(version.toId()));
+        realVersionsToEnsureCreated.addAll(
+                version.getResolvedDependencies().stream()
+                        //we don't just use isRealVersion to filter because if we have a resolved dependency that's not
+                        //either latest or real we want to fail
+                        .filter(dep -> !versionPurifier.isLatestVersion(dep.getVersion().getVersion()))
+                        .map(dep -> versionPurifier.requireRealVersion(dep.getVersion().toId()))
+                        .collect(Collectors.toSet())
+        );
+        if (!excludeRequestedDependencies) {
+            realVersionsToEnsureCreated.addAll(
+                    version.getResolvedDependencies().stream()
+                            .flatMap(dep -> dep.getVersion().getRequestedDependencies().stream())
+                            .filter(dep -> versionPurifier.isRealVersion(dep.getVersion().getVersion()))
+                            .map(dep -> dep.getVersion().toId())
+                            .collect(Collectors.toSet())
+            );
+            realVersionsToEnsureCreated.addAll(
+                    version.getRequestedDependencies().stream()
+                            .filter(dep -> versionPurifier.isRealVersion(dep.getVersion().getVersion()))
+                            .map(dep -> dep.getVersion().toId())
+                            .collect(Collectors.toSet())
+            );
+        }
 
-    private void saveRequestedDependencies(Version parent, Set<VersionId> componentsWithVersionsCreated) {
-        for (Dependency dep : parent.getRequestedDependencies()) {
-            componentDao.ensureCreated(dep.getVersion().getComponent());
-            if (versionDao.createRequestedImplicitDependency(parent, dep.getVersion(), dep.getProfiles())) {
-                componentsWithVersionsCreated.add(dep.getVersion().toId());
+        Set<VersionId> shadowVersionsToEnsureCreated = new HashSet<>();
+        shadowVersionsToEnsureCreated.addAll(
+                version.getResolvedDependencies().stream()
+                        .filter(dep -> versionPurifier.isLatestVersion(dep.getVersion().getVersion()))
+                        .map(dep -> dep.getVersion().toId())
+                        .collect(Collectors.toSet())
+        );
+
+        if (!excludeRequestedDependencies) {
+            shadowVersionsToEnsureCreated.addAll(
+                    version.getResolvedDependencies().stream()
+                            .flatMap(dep -> dep.getVersion().getRequestedDependencies().stream())
+                            .filter(dep -> !versionPurifier.isRealVersion(dep.getVersion().getVersion()))
+                            .map(dep -> dep.getVersion().toId())
+                            .map(versionPurifier::purifyVersion)
+                            .collect(Collectors.toSet())
+            );
+
+            shadowVersionsToEnsureCreated.addAll(
+                    version.getRequestedDependencies().stream()
+                            .filter(dep -> !versionPurifier.isRealVersion(dep.getVersion().getVersion()))
+                            .map(dep -> dep.getVersion().toId())
+                            .map(versionPurifier::purifyVersion)
+                            .collect(Collectors.toSet())
+            );
+        }
+
+        //Regardless of versioning scheme, we're doing maven ordering.  Maven versions need to be done in maven ordering
+        //since when we fix precedence we want to fix precedence in maven order to prevent deadlocks.  Non-maven version
+        // precedence is based on create
+        //timestamp, which means that if we were ever fixing precedence for multiple non-maven versions for the same component
+        //at the same time, it means we created two non-maven versions at the same time and we don't have an ordering
+        //guarantee between them so we can insert them in the precedence list in an arbitrary order.  We choose maven
+        //ordering to ensure we create them in a deterministic order so as to prevent deadlocks
+        Comparator<VersionId> versionComparator = (o1, o2) -> {
+            if (o1.getComponent().equals(o2.getComponent())) {
+                return new ComparableVersion(o1.getVersion()).compareTo(new ComparableVersion(o2.getVersion()));
+            } else {
+                return o1.getComponent().compareTo(o2.getComponent());
             }
+
+        };
+
+        shadowVersionsToEnsureCreated
+                .stream()
+                .sorted(versionComparator)
+                .forEach(v -> versionDao.createShadowVersion(v.getComponent(), v.getVersion()));
+
+        return realVersionsToEnsureCreated
+                .stream()
+                .sorted(versionComparator)
+                .filter(v -> versionDao.createNewVersion(v.getComponent(), v.getVersion()))
+                .collect(Collectors.toList());
+    }
+
+    private void ensureReferencedComponentsExist(Version version) {
+        Set<String> components = new HashSet<>(); //ensure we only ensure created for a component once
+        components.add(version.getComponent());
+        for (Dependency dep : version.getResolvedDependencies()) {
+            components.add(dep.getVersion().getComponent());
+            components.addAll(dep.getVersion().getRequestedDependencies().stream().map(d -> d.getVersion().getComponent()).collect(Collectors.toList()));
+        }
+        components.addAll(version.getRequestedDependencies().stream().map(d -> d.getVersion().getComponent()).collect(Collectors.toList()));
+        ensureCreatedInAlphabeticalOrder(components);
+    }
+
+    private void ensureCreatedInAlphabeticalOrder(Set<String> components) {
+        List<String> sortedComponents = Lists.newArrayList(components);
+        Collections.sort(sortedComponents);
+        sortedComponents.forEach(componentDao::ensureCreated);
+    }
+
+    private void saveRequestedDependencies(Version parent) {
+        for (Dependency dep : parent.getRequestedDependencies()) {
+            versionDao.createRequestedDependency(
+                    parent,
+                    dep.getVersion(),
+                    versionPurifier.purifyVersion(dep.getVersion()).getVersion(),
+                    dep.getProfiles()
+            );
         }
     }
 
