@@ -66,9 +66,9 @@ public class ComponentService {
     }
 
     public Version createOrUpdateDryRunVersion(Version version) {
-        //Currently we have concurrency issued doing multiple create/updates at the same time, so take the queue head lock
-        //to sync with both other dry run creates and with real creates
         if (requireDryRunLock) {
+            //Previous concurrency issues with multiple parallel dry-run creates should be fixed, however this has been
+            //left in as an option as a safety valve in case any new ones are discovered
             queueDao.lockQueueHead();
         }
         //we do not save requested dependencies for dry-run creates since we're doing this to find out what issues
