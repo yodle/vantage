@@ -31,6 +31,7 @@ import org.apache.maven.artifact.versioning.ComparableVersion;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.interceptor.TransactionAspectSupport;
@@ -56,6 +57,7 @@ public class ComponentService {
     @Autowired private QueueDao queueDao;
     @Autowired private PrecedenceFixer precedenceFixer;
     @Autowired private VersionPurifier versionPurifier;
+    @Value("${vantage.require-dry-run-lock:false}") private boolean requireDryRunLock;
 
     private Logger l = LoggerFactory.getLogger(ComponentService.class);
 
@@ -66,7 +68,9 @@ public class ComponentService {
     public Version createOrUpdateDryRunVersion(Version version) {
         //Currently we have concurrency issued doing multiple create/updates at the same time, so take the queue head lock
         //to sync with both other dry run creates and with real creates
-        queueDao.lockQueueHead();
+        if (requireDryRunLock) {
+            queueDao.lockQueueHead();
+        }
         //we do not save requested dependencies for dry-run creates since we're doing this to find out what issues
         //affect this version and the requested dependencies don't contribute to that.
         Version resolvedVersion = createOrUpdateVersion(version, true);
