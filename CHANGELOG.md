@@ -1,6 +1,7 @@
 0.4.0 / Unreleased
 =================
 * Refactoring version creation to improve write scalability
+* Fixing bug where updating a version with the same dependencies but with different request versions or profiles would insert a new dependency relationship instead of updating the existing one
 
 0.3.5 / 2016-08-23
 =================
