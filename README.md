@@ -1,6 +1,6 @@
 #Vantage
 
-Vantage is an application designed to give you perspective on the state of dependencies across your entire estate.  It is intended to help solve the dependency management problems that arise when you may have hundreds of applications, a pool of hundreds of possible dependencies, spread across dozens of independent teams.  Specific types questions you may be interested in:
+Vantage is an application designed to give you perspective on the state of dependencies across your entire estate.  It is intended to help solve the dependency management problems that arise when you may have hundreds of applications, a pool of hundreds of possible dependencies, spread across dozens of independent teams.  Specific types of questions you may be interested in:
 
 1. What versions of a given library are being actively used by applications or other libraries?
 2. Which other applications or libraries depend on a given library?
