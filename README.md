@@ -38,7 +38,7 @@ Vantage is a standard spring boot web application, so you may additionally overr
 ###Configuration options
 In addition to the neo4j and spring boot configuration options, vantage has the following options
 
-* vantage.require-dry-run-lock - If true, dry-run creates will lock the front of the create queue, meaning only one real or dry-run create can run at a time.  If false, dry-run creates will not lock the queue, meaning that any number of dry-runs can occur concurrently (along with one real create).  Multiple concurrent dry-run creates should be able to run wihtout deadlock, but this option exists as a safety valve.  (Default: false)
+* vantage.require-dry-run-lock - If true, dry-run creates will lock the front of the create queue, meaning only one real or dry-run create can run at a time.  If false, dry-run creates will not lock the queue, meaning that any number of dry-runs can occur concurrently (along with one real create).  Multiple concurrent dry-run creates should be able to run without deadlock, but this option exists as a safety valve.  (Default: false)
 
 
 ###Running Vantage In Production
