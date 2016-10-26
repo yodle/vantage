@@ -1,4 +1,4 @@
-0.4.0 / Unreleased
+0.4.0 / 2016-10-26
 =================
 * Refactoring version creation to improve write scalability
 * Fixing bug where updating a version with the same dependencies but with different request versions or profiles would insert a new dependency relationship instead of updating the existing one
@@ -12,7 +12,7 @@
 =================
 * Issues page is now properly paginated
 * Added navbar links
-* Added tooltips for active and issues icons	
+* Added tooltips for active and issues icons
 
 0.3.3 / 2016-08-15
 =================
