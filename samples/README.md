@@ -10,6 +10,7 @@ This directory houses some sample data to populate Vantage so that you can explo
 
 1. Run Vantage from the root of the repository via `./gradlew bootRun -Pembedded`.  This will bring it up against an embedded neo4j database which will not be persisted to disk
 2. Run `load-sample.sh` in the `/sample` directory.  This script contains a shell script which `curl`s  the sample data to Vantage.
+3. Optionally, you can also load Vantage's dependencies by running `./gradlew vantagePublish` in the root of the repository.  This will publish dependencies via the [Vantage Gradle plugin](https://github.com/yodle/vantage-gradle).
 
 Because the processing of version creation is queued, it may take several seconds for Vantage to finish loading all the data.  You can view Vantage's logs to see when it has finished processing all the data.  Once it has finished, you can view the loaded data by navigating to http://localhost:8080.
 
@@ -26,7 +27,7 @@ For a more guided tour of Vantage's features, you can follow the following steps
 
 A user who is interested in the state of the two webapps is able to determine that sample-webapp does not depend on any version with known issues, but another-webapp still does and should be upgraded.  A user who owns the org.sample:transitively-included-library can determine that version 1.6.0 is still active.  They can then further dig into what applications or libraries still depend on it so that they can notify those consumers that they should upgrade.  
 
-If you want to hands on, there are a couple things you may want to try out:
+If you want to get hands on, there are a couple things you may want to try out:
 
 * PUT the version in `sample-webapp-13d00032.vantage.json` to vantage with the dryRun=true query parameter.  (I.e. curl -H "Content-Type: application/json" -XPUT localhost:8080/api/v1/components/sample-webapp/versions/13d00032?dryRun=true -d @sample-webapp-13d00032.vantage.json).  Rather than queue the version and permanently create it, it will synchronously perform a dry run of creating the version.  This will cause issues transitively affecting this version to be returned, allowing for this information to be displayed in your build processes and potentially even gate builds.
 * Create a new issue in the Vantage UI.  Note that the fix version is optional and can be left off if there is not yet a fixed version of the library but you still want to notify consumers, or if you do not want any consumers using the library at all.

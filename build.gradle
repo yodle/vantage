@@ -5,6 +5,8 @@ buildscript {
   }
   dependencies {
     classpath 'org.springframework.boot:spring-boot-gradle-plugin:1.2.3.RELEASE'
+    classpath 'com.yodle:vantage-gradle:1.5.0'
+
   }
 }
 
@@ -13,6 +15,7 @@ apply plugin: 'idea'
 apply plugin: 'spring-boot'
 apply plugin: 'project-report'
 apply plugin: 'maven-publish'
+apply plugin: 'com.yodle.vantage'
 
 sourceCompatibility = JavaVersion.VERSION_1_8
 
@@ -57,7 +60,7 @@ dependencies {
 }
 
 task wrapper(type: Wrapper) {
-  gradleVersion = '2.5'
+  gradleVersion = '2.14.1'
 }
 
 task bowerInstall(type: Exec) {
